@@ -73,9 +73,23 @@ Older versions of the table are migrated in place before indexes and new rows ar
 
 The spatial, district, network type, and timestamp indexes support map visuals and common Power BI filters.
 
+The `vw_powerbi_network_telemetry` view is the recommended Power BI source. It
+keeps the raw table available while exposing ready-to-use reporting fields:
+
+- `observation_date`, `observation_year`, `observation_month`, and `observation_month_label` for time trends
+- `signal_band` for consistent signal-strength categories
+- `network_issue_flag` for filtering problem observations
+- `qos_score`, a 0-100 composite score based on signal, latency, packet loss, and dropped calls
+- `latitude` and `longitude` for map visuals without importing the PostGIS geometry field
+
 ## Power BI compatibility
 
 The loader preserves the existing `fact_network_telemetry` table and its
 column names. It creates the table only when it does not exist, and reruns use
 `ON CONFLICT (telemetry_id) DO NOTHING`, so an existing Power BI model can
 continue using the same PostgreSQL connection and fields.
+
+In Power BI, connect to PostgreSQL database `telecom_qos_db`, select
+`vw_powerbi_network_telemetry`, and use `observation_date` as the date axis.
+Set `latitude` and `longitude` to their respective data categories for map
+visuals. The view is recreated safely each time the loader runs.

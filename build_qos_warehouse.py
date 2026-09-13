@@ -109,6 +109,52 @@ def build_schema_layout():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_qos_recorded_at ON fact_network_telemetry(recorded_at);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_qos_location ON fact_network_telemetry USING GIST(location);")
 
+        cursor.execute("""
+        CREATE OR REPLACE VIEW vw_powerbi_network_telemetry AS
+        SELECT
+            telemetry_id,
+            recorded_at,
+            recorded_at::date AS observation_date,
+            EXTRACT(YEAR FROM recorded_at)::INTEGER AS observation_year,
+            EXTRACT(MONTH FROM recorded_at)::INTEGER AS observation_month,
+            TO_CHAR(recorded_at, 'YYYY-MM') AS observation_month_label,
+            device_model,
+            network_type,
+            signal_strength_dbm,
+            CASE
+                WHEN signal_strength_dbm >= -75 THEN 'Excellent'
+                WHEN signal_strength_dbm >= -90 THEN 'Good'
+                WHEN signal_strength_dbm >= -105 THEN 'Weak'
+                ELSE 'Critical'
+            END AS signal_band,
+            latency_ms,
+            packet_loss_pct,
+            call_dropped_flag,
+            CASE
+                WHEN call_dropped_flag
+                    OR signal_strength_dbm < -105
+                    OR latency_ms > 100
+                    OR packet_loss_pct > 5
+                THEN TRUE
+                ELSE FALSE
+            END AS network_issue_flag,
+            GREATEST(
+                0,
+                LEAST(
+                    100,
+                    100
+                    - ((-signal_strength_dbm - 50) * 0.8)
+                    - (latency_ms * 0.15)
+                    - (packet_loss_pct * 2)
+                    - CASE WHEN call_dropped_flag THEN 25 ELSE 0 END
+                )
+            )::NUMERIC(5, 2) AS qos_score,
+            district,
+            ST_Y(location) AS latitude,
+            ST_X(location) AS longitude
+        FROM fact_network_telemetry;
+        """)
+
         conn.commit()
         print(" Optimized schema and indexes established successfully!")
     finally:
