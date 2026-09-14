@@ -93,3 +93,7 @@ In Power BI, connect to PostgreSQL database `telecom_qos_db`, select
 `vw_powerbi_network_telemetry`, and use `observation_date` as the date axis.
 Set `latitude` and `longitude` to their respective data categories for map
 visuals. The view is recreated safely each time the loader runs.
+
+The current report file is [Network QoS Analytics.pbix](Network%20QoS%20Analytics.pbix).
+The step-by-step build notes and DAX measures are in
+[POWER_BI_GUIDE.md](POWER_BI_GUIDE.md).

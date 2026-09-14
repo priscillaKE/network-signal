@@ -9,7 +9,7 @@ DB_USER = os.getenv("QOS_DB_USER", "postgres")
 DB_NAME = os.getenv("QOS_DB_NAME", "postgres")
 
 def main():
-    print(" Attempting a handshake with your PostgreSQL local cluster server...")
+    print("Checking PostgreSQL connectivity...")
     connection_settings = {
         "host": DB_HOST,
         "port": DB_PORT,
@@ -23,13 +23,12 @@ def main():
                 cursor.execute("SELECT version();")
                 db_version = cursor.fetchone()
 
-        print("\n --- CONNECTIVITY STATUS: SUCCESS ---")
-        print(f"Connected to database engine running on: {db_version[0]}")
-        print(" Securely disconnected. Network channel is fully operational!")
+        print("Connection successful.")
+        print(f"Server: {db_version[0]}")
     except psycopg2.Error as error:
-        print("\n CONNECTIVITY STATUS: FAILED")
-        print(f"Error Details: {error}")
-        print("\n Troubleshooting Tip: Add your local credential to %APPDATA%\\postgresql\\pgpass.conf.")
+        print("Connection failed.")
+        print(f"Error: {error}")
+        print("Check %APPDATA%\\postgresql\\pgpass.conf for local credentials.")
         return 1
 
     return 0

@@ -26,23 +26,23 @@ def connection_kwargs(database):
 
 def setup_database_instance():
     """Creates the warehouse database if it does not already exist."""
-    print(" Initializing cluster management...")
+    print("Checking PostgreSQL database...")
     conn = psycopg2.connect(**connection_kwargs("postgres"))
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
     
     cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", (TARGET_DB,))
     if cursor.fetchone():
-        print(f" Using existing warehouse database '{TARGET_DB}'.")
+        print(f"Using existing database '{TARGET_DB}'.")
     else:
         cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(TARGET_DB)))
-        print(f" Warehouse database '{TARGET_DB}' successfully provisioned!")
+        print(f"Created database '{TARGET_DB}'.")
     cursor.close()
     conn.close()
 
 def build_schema_layout():
-    """Designs an optimized telecom quality-of-service table framework with indexing cascades."""
-    print(f" Connecting to '{TARGET_DB}' to construct relational schemas...")
+    """Create the telemetry schema, indexes, and Power BI reporting view."""
+    print(f"Preparing schema in '{TARGET_DB}'...")
     conn = psycopg2.connect(**connection_kwargs(TARGET_DB))
     try:
         cursor = conn.cursor()
@@ -156,13 +156,13 @@ def build_schema_layout():
         """)
 
         conn.commit()
-        print(" Optimized schema and indexes established successfully!")
+        print("Schema and reporting view are ready.")
     finally:
         conn.close()
 
 def bulk_stream_telemetry():
-    """Generates 50,000 rows of cellular diagnostics across Uganda and bulk-inserts into PostgreSQL."""
-    print(" Synthesizing 50,000 spatial network telemetry reports...")
+    """Generate deterministic telemetry observations and load them into PostgreSQL."""
+    print(f"Generating {ROW_COUNT:,} telemetry observations...")
     
     districts = ["Kampala", "Wakiso", "Mbarara", "Gulu", "Jinja", "Entebbe", "Mukono", "Masaka", "Arua", "Mbale"]
     devices = ["iPhone 15 Pro", "Samsung S24 Ultra", "Tecno Camon 30", "Infinix Hot 40", "Huawei Nova 11"]
@@ -187,16 +187,13 @@ def bulk_stream_telemetry():
         latitude += random.uniform(-0.03, 0.03)
         longitude += random.uniform(-0.03, 0.03)
         
-        # Inject explicit network issues into specific regions to create deep insights for PowerBI
         if district in ["Gulu", "Arua", "Masaka"] and random.random() > 0.4:
-            # High dead-zone profile (Poor signal, high drops)
             net_type = random.choice(["3G", "2G"])
             signal = random.randint(-120, -105)   # Severe signal degradation
             latency = random.randint(120, 350)
             packet_loss = round(random.uniform(5.0, 25.0), 2)
             dropped = random.random() > 0.3
         else:
-            # Healthy network profile
             net_type = random.choice(net_types)
             signal = random.randint(-95, -50)
             latency = random.randint(15, 65)
@@ -208,8 +205,7 @@ def bulk_stream_telemetry():
         
         records.append((t_id, timestamp, device, net_type, signal, latency, packet_loss, dropped, district, longitude, latitude))
         
-    # Bulk write pipeline execution using efficient cursor extend routing
-    print(" Direct-streaming payload records into the PostgreSQL transactional pipeline...")
+    print("Loading observations into PostgreSQL...")
     conn = psycopg2.connect(**connection_kwargs(TARGET_DB))
     try:
         cursor = conn.cursor()
@@ -227,7 +223,7 @@ def bulk_stream_telemetry():
 
         cursor.execute("SELECT COUNT(*) FROM fact_network_telemetry;")
         total_written = cursor.fetchone()[0]
-        print(f" Data pipeline success! Recorded {total_written:,} telemetry logs.")
+        print(f"Load complete. Database contains {total_written:,} telemetry rows.")
     finally:
         conn.close()
 
